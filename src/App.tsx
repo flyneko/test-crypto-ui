@@ -1,26 +1,34 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { Suspense } from "react";
+import Routes from "./core/router";
+import {useEffect} from "react";
+import {ToastContainer} from "react-toastify";
+import {useLocation} from "react-router-dom";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+
+function ScrollToTop() {
+    const location = useLocation();
+
+    useEffect(() => {
+      window.scrollTo(0, 0)    
+    }, [location]);
+
+    return null;
 }
 
-export default App;
+export function App() {
+    useEffect(() => {
+        const rootEl = document.getElementById('root');
+        rootEl && rootEl.classList.remove('preloader');
+    }, []);
+
+    return (
+        <>
+            <Suspense fallback={<div className="preloader" />}>
+                <Routes>
+                    <ScrollToTop />
+                    <ToastContainer enableMultiContainer={true} limit={10} />
+                </Routes>
+            </Suspense>
+        </>
+    );
+}
