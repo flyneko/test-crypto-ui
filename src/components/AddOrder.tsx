@@ -22,8 +22,8 @@ const schema = yup.object({
 
 const defaultValues = {
     type:               null,
-    deposit:            null,
-    multiply:           null,
+    deposit:            '',
+    multiply:           '',
     stop_profit_price:  '',
     stop_loss_price:    '',
     support_over_night: false,
@@ -182,10 +182,10 @@ export function AddOrder() {
                         {error && <Alert sx={{ width: '100%' }} severity="error">{error}</Alert>}
 
                         {[
-                            { onClick: () => handleClickSubmitButton('0'), label: 'Place call order' },
-                            { onClick: () => handleClickSubmitButton('1'), label: 'Place put order' }
-                        ].map(btn => (
-                            <Grid item xs={12} xl={6}>
+                            { label: 'Place call order', onClick: () => handleClickSubmitButton('0') },
+                            { label: 'Place put order', onClick: () => handleClickSubmitButton('1') }
+                        ].map((btn, index) => (
+                            <Grid key={index} item xs={12} xl={6}>
                                 <Button
                                     onClick={btn.onClick}
                                     type="button"
