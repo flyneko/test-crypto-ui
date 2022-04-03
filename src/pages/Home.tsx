@@ -9,11 +9,11 @@ export function Home() {
     return (
         <Main>
             <Grid container spacing={5}>
-                <Grid item xs={4}>
+                <Grid item xs={12} sm={4}>
                     <CurrencyInfo />
                     <AddOrder />
                 </Grid>
-                <Grid item xs={8}>
+                <Grid item xs={12} sm={8}>
                     <OptionsList />
                 </Grid>
             </Grid>
