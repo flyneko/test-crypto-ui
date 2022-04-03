@@ -11,14 +11,9 @@ export default ky.create({
     hooks: {
         afterResponse: [
             async (_request, _options, response) => {
-                if (!response.ok && response.status != 404) {
-                    let errorResponse = false;
-                    await response.json().catch(() => errorResponse = true);
-
-                    if (errorResponse) {
-                        toastify.error(`Something went wrong <br /> ${response.status} ${response.statusText}`);
-                        return new Response('[]');
-                    }
+                if (!response.ok && response.status !== 404) {
+                    toastify.error(`Something went wrong <br /> ${response.status} ${response.statusText}`);
+                    return new Response('[]');
                 }
             }
         ]
