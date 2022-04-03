@@ -6,7 +6,7 @@ import optionsReducer from './slices/options'
 export default configureStore({
     reducer: {
         auth: authReducer,
-        games: optionsReducer
+        options: optionsReducer
     },
     middleware: getDefaultMiddleware({
         serializableCheck: false
