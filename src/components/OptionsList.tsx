@@ -1,56 +1,53 @@
-import { Button, Grid, Typography } from "@mui/material";
+import { Button, CircularProgress, Grid, Typography } from "@mui/material";
 import { Box } from "@mui/system";
-import React, { useEffect, useState } from "react";
-import { Api } from "../core/api";
-import useApi from "../hooks/useApi";
+import React, { useEffect } from "react";
 import { Option } from "./Option";
-import useWebSocket, { ReadyState } from 'react-use-websocket';
-import { API_URL } from "../core/constants";
-import { useSelector } from "react-redux";
+import useWebSocket from 'react-use-websocket';
+import { WS_HOST } from "../core/constants";
+import { useDispatch, useSelector } from "react-redux";
 import { getToken } from "../redux/slices/auth";
+import { fetchOptions, getOptions, getOptionsActiveType, getOptionsStatus, setActiveType } from "../redux/slices/options";
 
 export function OptionsList() {
+    const dispatch = useDispatch();
     const token = useSelector(getToken);
-    const [isListOpen, setIsListOpen] = useState(false);
-    const { data: optionsList, request: optionsListRequest, isLoading } = useApi(Api.optionsList);
-    const {
-        sendJsonMessage,
-        lastMessage,
-        lastJsonMessage,
-        readyState,
-    } = useWebSocket(`wss://${API_URL}/ws/options_live`, { queryParams: { token } });
+    const activeType = useSelector(getOptionsActiveType);
+    const optionsList = useSelector(getOptions);
+    const isOptionsLoading = useSelector(getOptionsStatus) === 'loading';
+    const { sendJsonMessage, lastJsonMessage } = useWebSocket(`wss://${WS_HOST}/ws/options_live`, { queryParams: { token } });
 
     useEffect(() => {
-        isListOpen && optionsListRequest();
-    }, [isListOpen]);
+        dispatch(fetchOptions());
+    }, [activeType]);
 
     return (
         <Box>
-            <Typography variant="h4" color="inherit" textAlign="center" sx={{ mb: 4 }}>
+            <Typography variant="h4" textAlign="center" sx={{ mb: 4 }}>
                 Order listing
             </Typography>
             <Grid container spacing={2} sx={{ pb: 5 }} alignItems="center">
-                <Grid item xs={4}>
-                    <Button onClick={() => setIsListOpen(true)} variant={isListOpen ? 'contained' : 'outlined'} size="large" fullWidth>
-                        Open
-                    </Button>
-                </Grid>
-                <Grid item xs={4}>
-                    <Button onClick={() => setIsListOpen(false)} variant="outlined" size="large" fullWidth>
-                        Close
-                    </Button>
-                </Grid>
-                <Grid item xs={4}>
-                    <Button onClick={() => setIsListOpen(false)} variant="outlined" size="large" fullWidth>
-                        Force close
-                    </Button>
-                </Grid>
+                {Object.entries({
+                    'all': 'All',
+                    'active': 'Open',
+                    'closed': 'Closed',
+                    'force_closed': 'Force closed',
+                }).map(([key, label], index) => (
+                    <Grid key={index} item xs={6} lg={3}>
+                        <Button onClick={() => dispatch(setActiveType(key))} variant={key === activeType ? 'contained' : 'outlined'} size="large" fullWidth>
+                            {
+                                isOptionsLoading && key === activeType ?
+                                    <CircularProgress color="warning" size={24} /> :
+                                    label
+                            }
+                        </Button>
+                    </Grid>
+                ))}
             </Grid>
 
 
-            {isListOpen && (
-                [{}, {}, {}].map((i, index) => (
-                    <Option key={index} data={i} sendWsMessage={sendJsonMessage} wsMessage={lastJsonMessage} />
+            {(
+                optionsList.map((i) => (
+                    <Option key={i.option_project_uuid} data={i} sendWsMessage={sendJsonMessage} wsMessage={lastJsonMessage} />
                 ))
             )}
         </Box>
