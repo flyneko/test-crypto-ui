@@ -5,52 +5,67 @@ import * as yup from "yup";
 import { Controller, useForm } from "react-hook-form";
 import { Api } from "../core/api";
 import useApi from "../hooks/useApi";
-import { getCurrency } from "../redux/slices/auth";
-import { useSelector } from "react-redux";
+import { fetchUserInfo, getCurrency } from "../redux/slices/auth";
+import { batch, useDispatch, useSelector } from "react-redux";
+import { Balance } from "./Balance";
+import { fetchOptions } from "../redux/slices/options";
+import { toastify } from "../helpers/toastify";
+import { formatNum } from "../helpers/utils";
 
 const schema = yup.object({
-    crypto_amount: yup.string().required(),
+    deposit:           yup.number().required().transform(i => !i ? 0 : i),
+    type:              yup.number(),
+    multiply:          yup.number().required().transform(i => !i ? 0 : i),
+    stop_profit_price: yup.number().transform(i => !i ? 0 : i),
+    stop_loss_price:   yup.number().transform(i => !i ? 0 : i)
 }).required();
 
-export function AddOrder() {
-    const selectedCurrencyType = useSelector(getCurrency);
-    const { register, setValue, handleSubmit, watch, formState: { errors }, control } = useForm({
-        resolver: yupResolver(schema),
-        defaultValues: {
-            type: '',
-            crypto_amount: '',
-            multiply: '',
-            stop_profit_price: '',
-            stop_loss_price: '',
-            support_over_night: false,
+const defaultValues = {
+    type:               null,
+    deposit:            null,
+    multiply:           null,
+    stop_profit_price:  '',
+    stop_loss_price:    '',
+    support_over_night: false,
+};
 
-        }
+export function AddOrder() {
+    const dispatch = useDispatch();
+    const selectedCurrencyType = useSelector(getCurrency);
+    const { setValue, reset, handleSubmit, watch, formState: { errors }, control } = useForm({
+        resolver: yupResolver(schema),
+        defaultValues
     });
     const [error, setError] = useState('');
     const [totalOrderValue, setTotalOrderValue] = useState(0);
-    const { data, request, isLoading } = useApi(Api.addOption);
-    const { request: balanceRequest, data: balanceData, isLoading: isBalanceLoading } = useApi(Api.getUserInfo);
-
+    const { request: addOptionRequest, isLoading: isAddOptionLoading } = useApi(Api.addOption);
     const formValues = {
-        crypto_amount: watch('crypto_amount'),
+        deposit: watch('deposit'),
         multiply: watch('multiply')
     } as any;
 
     useEffect(() => {
-        balanceRequest();
-    }, []);
-
-    useEffect(() => {
-        const total = formValues.crypto_amount * formValues.multiply;
-        setTotalOrderValue(Math.round(total * 1000) / 1000)
-    }, [formValues.crypto_amount, formValues.multiply])
+        const total = formValues.deposit * formValues.multiply;
+        setTotalOrderValue(formatNum(total))
+    }, [formValues.deposit, formValues.multiply]);
 
     const onSubmit = (data) => {
-        request({
+        addOptionRequest({
             currency_type: selectedCurrencyType,
             ...data
-        }).then(response => {
-            console.log(response);
+        }).then((response: any) => {
+            if (typeof response === 'string' && response.includes('Error'))
+                setError(response);
+            else {
+                batch(() => {
+                    dispatch(fetchUserInfo());
+                    dispatch(fetchOptions());
+                });
+
+                setError('');
+                reset(defaultValues);
+                toastify.success('Option added successfully');
+            }
         })
     };
 
@@ -61,53 +76,50 @@ export function AddOrder() {
 
     return (
         <Box sx={{ mt: 5 }}>
-            <Typography variant="h6" textAlign="center" sx={{ mb: 3 }}>
-                Available balance: {isBalanceLoading ? <CircularProgress color="warning" size={15} /> : balanceData}
-            </Typography>
+            <Balance />
 
             <Paper elevation={3}>
                 <Box width="100%" component="form" noValidate sx={{ p: 3 }}>
-                    <Grid container spacing={2} sx={{ pb: 3 }} alignItems="center">
-                        <Grid item xs={4}>
+                    <Grid container spacing={2} alignItems="center">
+                        <Grid item xs={12} md={4}>
                             <Typography variant="h6" color="inherit">
                                 Deposit
                             </Typography>
                         </Grid>
-                        <Grid item xs={8}>
+                        <Grid item xs={12} md={8}>
                             <Controller
-                                name="crypto_amount"
+                                name="deposit"
                                 control={control}
-                                render={({ field }) => {
-                                    return (<TextField
+                                render={({ field }) => (
+                                    <TextField
                                         {...field}
                                         type="number"
-                                        margin="normal"
                                         fullWidth
-                                        error={!!errors.crypto_amount}
-                                        helperText={errors.crypto_amount?.message}
-                                    />)
-                                }}
+                                        error={!!errors.deposit}
+                                        helperText={errors.deposit?.message}
+                                    />
+                                )}
                             />
                         </Grid>
 
-                        <Grid item xs={4}>
-                            <Typography variant="h6" color="inherit">
+                        <Grid item xs={12} md={4}>
+                            <Typography variant="h6">
                                 Multiply
                             </Typography>
                         </Grid>
-                        <Grid item xs={8}>
+                        <Grid item xs={12} md={8}>
                             <Controller
                                 name="multiply"
                                 control={control}
-                                render={({ field }) => {
-                                    return (<TextField
+                                render={({ field }) => (
+                                    <TextField
                                         {...field}
                                         type="number"
                                         fullWidth
                                         error={!!errors.multiply}
                                         helperText={errors.multiply?.message}
-                                    />)
-                                }}
+                                    />
+                                )}
                             />
                         </Grid>
 
@@ -117,43 +129,43 @@ export function AddOrder() {
                             </Typography>
                         </Grid>
 
-                        <Grid item xs={4}>
+                        <Grid item xs={12} md={4}>
                             <Typography variant="h6" color="inherit">
                                 Profit Stop
                             </Typography>
                         </Grid>
-                        <Grid item xs={8}>
+                        <Grid item xs={12} md={8}>
                             <Controller
                                 name="stop_profit_price"
                                 control={control}
-                                render={({ field }) => {
-                                    return (<TextField
+                                render={({ field }) => (
+                                    <TextField
                                         {...field}
                                         fullWidth
                                         error={!!errors.stop_profit_price}
                                         helperText={errors.stop_profit_price?.message}
-                                    />)
-                                }}
+                                    />
+                                )}
                             />
                         </Grid>
 
-                        <Grid item xs={4}>
+                        <Grid item xs={12} md={4}>
                             <Typography variant="h6" color="inherit">
                                 Loss stop
                             </Typography>
                         </Grid>
-                        <Grid item xs={8}>
+                        <Grid item xs={12} md={8}>
                             <Controller
                                 name="stop_loss_price"
                                 control={control}
-                                render={({ field }) => {
-                                    return (<TextField
+                                render={({ field }) => (
+                                    <TextField
                                         {...field}
                                         fullWidth
                                         error={!!errors.stop_loss_price}
                                         helperText={errors.stop_loss_price?.message}
-                                    />)
-                                }}
+                                    />
+                                )}
                             />
                         </Grid>
 
@@ -161,44 +173,44 @@ export function AddOrder() {
                             <Controller
                                 name="support_over_night"
                                 control={control}
-                                render={({ field }) => {
-                                    return (
-                                        <FormControlLabel {...field} control={<Checkbox />} label="Support Overnight Protection " />
-                                    )
-                                }}
+                                render={({field}) => (
+                                    <FormControlLabel control={<Checkbox {...field} />} label="Support Overnight Protection " />
+                                )}
                             />
                         </Grid>
 
-                        {error && <Alert severity="error">{error}</Alert>}
+                        {error && <Alert sx={{ width: '100%' }} severity="error">{error}</Alert>}
 
+                        {[
+                            { onClick: () => handleClickSubmitButton('0'), label: 'Place call order' },
+                            { onClick: () => handleClickSubmitButton('1'), label: 'Place put order' }
+                        ].map(btn => (
+                            <Grid item xs={12} xl={6}>
+                                <Button
+                                    onClick={btn.onClick}
+                                    type="button"
+                                    fullWidth
+                                    variant="contained"
+                                    disabled={isAddOptionLoading}
+                                >
+                                    {
+                                        isAddOptionLoading ? <CircularProgress color="warning" size={25} /> :  btn.label
+                                    }
+                                </Button>
+                            </Grid>
+                        ))}
 
-                        <Grid item xs={6}>
-                            <Button
-                                onClick={() => handleClickSubmitButton('call')}
-                                type="button"
-                                fullWidth
-                                variant="contained"
-                            >
-                                {
-                                    0 ? <CircularProgress color="warning" size={25} /> : 'Place call order'
-                                }
-                            </Button>
-                        </Grid>
-                        <Grid item xs={6}>
-                            <Button
-                                onClick={() => handleClickSubmitButton('put')}
-                                type="button"
-                                fullWidth
-                                variant="contained"
-                            >
-                                {
-                                    0 ? <CircularProgress color="warning" size={25} /> : 'Place put order'
-                                }
-                            </Button>
+                        <Grid item xs={12} textAlign="center">
+                            <Button size="small" onClick={() => reset({
+                                type: 0,
+                                deposit: 0.5,
+                                multiply: 3,
+                                stop_profit_price: 9000.5,
+                                stop_loss_price: 9.5,
+                                support_over_night: true,
+                            } as any)}>Fill test data</Button>
                         </Grid>
                     </Grid>
-
-
                 </Box>
             </Paper>
         </Box>
