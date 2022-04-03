@@ -1,13 +1,13 @@
 import ky from "../helpers/ky";
-import { API_URL } from "./constants";
+import { API_HOST } from "./constants";
 
 const requestClient = ky.extend({
-    prefixUrl: `https://${API_URL}`,
+    prefixUrl: `https://${API_HOST}`,
     hooks: {
 		beforeRequest: [
 			request => {
                 const token = localStorage.getItem('auth_token');
-				token && request.headers.set('Authorization', 'Bearer ' + token);
+				token && !request.headers.get('Authorization') && request.headers.set('Authorization', 'Bearer ' + token);
 			}
 		]
 	}
@@ -16,25 +16,30 @@ const requestClient = ky.extend({
 class ApiClient {
     signIn(credentinals: { username: string, password: string }) {
         return () => requestClient.post(
-            'auth',
-             { 
-                 json: { email: credentinals.username, password: credentinals.password },
-                 headers: {
-                     'Content-type': 'text/plain'
-                 }
-             }).text()
+            'get_token',
+            {
+                json: {
+                    user: credentinals.username,
+                    password: credentinals.password,
+                }
+            }
+        ).text()
     }
 
-    optionsList() {
-        return () => requestClient.get('list_options', {
-            headers: {
-                'Content-type': 'application/json'
-            }
-        }).json()
+    signUp(credentinals: { username: string, password: string }) {
+        return () => requestClient.post('auth', { json: { email: credentinals.username, password: credentinals.password } }).text()
+    }
+
+    getOptionsList(data?: any) {
+        return () => requestClient.post('list_options', { json: data }).json()
+    }
+
+    getActiveOptionsList(data?: any) {
+        return () => requestClient.get('list_active_options').json()
     }
 
     addOption(data: any) {
-        return () => requestClient.post('create_option', { json: data }).json()
+        return () => requestClient.post('create_option', { json: data }).text()
     }
 
     closeOption(uuid: any) {
@@ -42,11 +47,15 @@ class ApiClient {
     }
 
     getUserInfo() {
-        return () => requestClient.get('user_info', {
-            headers: {
-                'Content-type': 'application/json'
-            }
-        }).text()
+        return () => requestClient.get('user_info').json()
+    }
+
+    addCredit(data: any) {
+        return () => requestClient.post('add_credit', { json: data, headers: { Authorization: 'Bearer 1111' } }).text()
+    }
+
+    withdrawCredit(data: any) {
+        return () => requestClient.post('withdraw_credit', { json: data, headers: { Authorization: 'Bearer 1111' } }).text()
     }
 }
 
