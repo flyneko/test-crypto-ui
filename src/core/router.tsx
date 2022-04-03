@@ -2,7 +2,7 @@ import React from "react";
 import { useSelector } from "react-redux";
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from "react-router-dom";
 import {Home} from "../pages/Home";
-import { SignIn } from "../pages/SignIn";
+import { Auth } from "../pages/Auth";
 import {isLogged} from "../redux/slices/auth";
 
 const URLS = {
@@ -23,11 +23,11 @@ export { URLS }
 
 export default function({children}: any) {
     return (
-        <Router>
+        <Router basename={process.env.PUBLIC_URL}>
             {children}
             <Routes>
                 <Route path="/" element={<RequireAuth c={<Home />}/>} />
-                <Route path={URLS.SignIn} element={<SignIn />} />
+                <Route path={URLS.SignIn} element={<Auth />} />
             </Routes>
         </Router>
     );
