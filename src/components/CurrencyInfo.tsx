@@ -1,8 +1,8 @@
-import { FormControl, Grid, InputLabel, MenuItem, Select, Typography } from "@mui/material";
+import { FormControl, Grid, MenuItem, Select, Typography } from "@mui/material";
 import { Box } from "@mui/system";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { API_URL, CURRENCIES } from "../core/constants";
+import { CURRENCIES, WS_HOST } from "../core/constants";
 import { clearToken, getCurrency, getToken, setCurrency } from "../redux/slices/auth";
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { toastify } from "../helpers/toastify";
@@ -13,15 +13,8 @@ export function CurrencyInfo() {
     const token = useSelector(getToken);
     const [currencyInfo, setCurrencyInfo] = useState({} as any);
     const [trendVectors, setTrendVectors] = useState({ buy: 0, sell: 0 });
-    const onChangeCurrency = (e: any) => {
-        dispatch(setCurrency(e.target.value));
-    }
-    const {
-        sendJsonMessage,
-        lastMessage,
-        lastJsonMessage,
-        readyState,
-    } = useWebSocket(`wss://${API_URL}/ws/currency_live`, { queryParams: { token } });
+    const onChangeCurrency = (e: any) => dispatch(setCurrency(e.target.value));
+    const { sendJsonMessage, lastMessage, lastJsonMessage, readyState } = useWebSocket(`wss://${WS_HOST}/ws/currency_live`, { queryParams: { token } });
 
     useEffect(() => {
         if (lastMessage?.data.includes('Error')){
@@ -31,8 +24,8 @@ export function CurrencyInfo() {
 
         if (lastJsonMessage) {
             currencyInfo && setTrendVectors({
-                buy: lastJsonMessage.average_buy_price == currencyInfo.average_buy_price ? 0 : lastJsonMessage.average_buy_price > currencyInfo.average_buy_price ? 1 : -1,
-                sell: lastJsonMessage.average_sell_price == currencyInfo.average_sell_price ? 0 : lastJsonMessage.average_sell_price > currencyInfo.average_sell_price ? 1 : -1
+                buy: lastJsonMessage.average_buy_price === currencyInfo.average_buy_price ? 0 : lastJsonMessage.average_buy_price > currencyInfo.average_buy_price ? 1 : -1,
+                sell: lastJsonMessage.average_sell_price === currencyInfo.average_sell_price ? 0 : lastJsonMessage.average_sell_price > currencyInfo.average_sell_price ? 1 : -1
             })
             setCurrencyInfo(lastJsonMessage);
         }
@@ -40,22 +33,22 @@ export function CurrencyInfo() {
     }, [lastMessage]);
 
     useEffect(() => {
-        ReadyState.OPEN == readyState && sendJsonMessage({ event: "subscribe", "currency_type": selectedCurrency });
+        ReadyState.OPEN === readyState && sendJsonMessage({ event: "subscribe", "currency_type": selectedCurrency });
 
         return () => {
-            ReadyState.OPEN == readyState && sendJsonMessage({ event: "unsubscribe", "currency_type": selectedCurrency })
+            ReadyState.OPEN === readyState && sendJsonMessage({ event: "unsubscribe", "currency_type": selectedCurrency })
         }
     }, [readyState, selectedCurrency])
 
     return (
         <Box>
             <Grid container spacing={2} sx={{ pb: 3 }} alignItems="center">
-                <Grid item xs={4}>
+                <Grid item xs={12} md={4}>
                     <Typography variant="h6" color="inherit">
                         Currency
                     </Typography>
                 </Grid>
-                <Grid item xs={8}>
+                <Grid item xs={12} md={8}>
                     <FormControl fullWidth>
                         <Select value={selectedCurrency} onChange={onChangeCurrency}>
                             {Object.entries(CURRENCIES).map(([currencyValue, currencyLabel]: any, index: any) => (
@@ -66,12 +59,12 @@ export function CurrencyInfo() {
                 </Grid>
             </Grid>
             <Grid container spacing={2}>
-                <Grid item xs={4}>
+                <Grid item xs={12} md={4}>
                     <Typography variant="h6">
                         {CURRENCIES[selectedCurrency]}
                     </Typography>
                 </Grid>
-                <Grid item xs={8}>
+                <Grid item xs={12} md={8}>
                     <Grid container spacing={2} justifyContent="space-between" alignItems="center">
                         <Grid item xs={6}>
                             <Typography variant="h6" color="inherit">
