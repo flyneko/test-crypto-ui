@@ -33,6 +33,8 @@ export function CurrencyInfo() {
     }, [lastMessage]);
 
     useEffect(() => {
+        ReadyState.CLOSED === readyState && toastify.error('Websocket /currency_live connection closed');
+
         ReadyState.OPEN === readyState && sendJsonMessage({ event: "subscribe", "currency_type": selectedCurrency });
 
         return () => {

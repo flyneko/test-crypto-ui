@@ -2,11 +2,12 @@ import { Button, CircularProgress, Grid, Typography } from "@mui/material";
 import { Box } from "@mui/system";
 import React, { useEffect } from "react";
 import { Option } from "./Option";
-import useWebSocket from 'react-use-websocket';
+import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { WS_HOST } from "../core/constants";
 import { useDispatch, useSelector } from "react-redux";
 import { getToken } from "../redux/slices/auth";
 import { fetchOptions, getOptions, getOptionsActiveType, getOptionsStatus, setActiveType } from "../redux/slices/options";
+import { toastify } from "../helpers/toastify";
 
 export function OptionsList() {
     const dispatch = useDispatch();
@@ -14,11 +15,15 @@ export function OptionsList() {
     const activeType = useSelector(getOptionsActiveType);
     const optionsList = useSelector(getOptions);
     const isOptionsLoading = useSelector(getOptionsStatus) === 'loading';
-    const { sendJsonMessage, lastJsonMessage } = useWebSocket(`wss://${WS_HOST}/ws/options_live`, { queryParams: { token } });
+    const { readyState, sendJsonMessage, lastJsonMessage } = useWebSocket(`wss://${WS_HOST}/ws/options_live`, { queryParams: { token } });
 
     useEffect(() => {
         dispatch(fetchOptions());
     }, [activeType]);
+
+    useEffect(() => {
+        ReadyState.CLOSED === readyState && toastify.error('Websocket /options_live connection closed');
+    }, [readyState])
 
     return (
         <Box>
