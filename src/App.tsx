@@ -3,6 +3,8 @@ import Routes from "./core/router";
 import {useEffect} from "react";
 import {ToastContainer} from "react-toastify";
 import {useLocation} from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchUserInfo, getToken } from "./redux/slices/auth";
 
 
 function ScrollToTop() {
@@ -16,10 +18,12 @@ function ScrollToTop() {
 }
 
 export function App() {
+    const dispatch = useDispatch();
+    const token = useSelector(getToken);
+
     useEffect(() => {
-        const rootEl = document.getElementById('root');
-        rootEl && rootEl.classList.remove('preloader');
-    }, []);
+        token && dispatch(fetchUserInfo());
+    }, [token]);
 
     return (
         <>
